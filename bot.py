@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import app_commands, ui, Interaction
+from discord import app_commands, Interaction
 import json
 import os
 from flask import Flask
@@ -18,7 +18,7 @@ intents.guilds = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ---------- JSON 儲存檔 ----------
+# ---------- JSON 白名單 ----------
 WHITELIST_FILE = "whitelist.json"
 
 def load_whitelist():
@@ -26,15 +26,13 @@ def load_whitelist():
         try:
             with open(WHITELIST_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                # 將 keys 轉成 int（Discord ID）
                 return set(int(uid) for uid in data)
         except Exception as e:
             print(f"❗ 讀取 {WHITELIST_FILE} 發生錯誤，已備份並回退空集合: {e}")
             try:
                 os.rename(WHITELIST_FILE, WHITELIST_FILE + ".bak")
-                print(f"備份檔案為 {WHITELIST_FILE}.bak")
-            except Exception as e2:
-                print(f"備份失敗：{e2}")
+            except Exception:
+                pass
             return set()
     else:
         return set()
@@ -54,6 +52,7 @@ async def punish(message, member, minutes=0, hours=0, reason=""):
         await message.delete()
     except discord.Forbidden:
         print(f"⚠️ 無法刪除 {member} 的訊息（權限不足）")
+
     duration = timedelta(minutes=minutes, hours=hours)
     try:
         await member.timeout_for(duration, reason=reason)
